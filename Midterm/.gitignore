@@ -1,0 +1,5 @@
+#mengabaikan file hasil compile latex
+*.aux
+*.log
+*.out
+*.synctex.gz
