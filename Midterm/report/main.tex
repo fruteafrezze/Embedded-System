@@ -128,13 +128,13 @@ Tujuan dari pelaksanaan proyek ini adalah:
 Raspberry Pi adalah komputer papan tunggal (\textit{Single Board Computer} / SBC) seukuran kartu kredit yang dilengkapi dengan
  prosesor berbasis arsitektur ARM, memori RAM, port komunikasi, serta deretan pin GPIO. Raspberry Pi umumnya menjalankan sistem 
  operasi berbasis Linux (seperti Raspberry Pi OS) dan mendukung pemrograman tingkat tinggi menggunakan bahasa Python untuk 
- mengendalikan perangkat keras eksternal secara efisien.
+ mengendalikan perangkat keras eksternal secara efisien \cite{rpidoc,gpiozero}.
 
 \subsection{Sensor Suhu dan Kelembaban (DHT11)}
 Sensor DHT11 merupakan modul sensor digital yang berfungsi mengukur suhu dan kelembaban relatif udara di sekitarnya. Sensor ini 
 menggunakan elemen sensor kapasitif untuk mengukur kelembaban dan termistor (\textit{Negative Temperature Coefficient}) untuk 
 mengukur suhu, kemudian mengirimkan sinyal digital terkalibrasi melalui antarmuka komunikasi satu jalur (\textit{single-wire 
-serial interface}) ke pin GPIO Raspberry Pi.
+serial interface}) ke pin GPIO Raspberry Pi \cite{dht11,adafruitdht}.
 
 \subsection{Sensor Gerak PIR (\textit{Passive Infrared})}
 Sensor PIR (\textit{Passive Infrared}) adalah sensor elektronik yang berfungsi mendeteksi pergerakan objek berdasarkan pancaran 
@@ -143,7 +143,7 @@ bahwa sensor ini tidak memancarkan sinyal inframerah sendiri, melainkan hanya me
 elemen sensor piroelektrik di dalamnya. Ketika terjadi perubahan pola radiasi inframerah akibat gerakan, sensor PIR akan mengubah
  logika pin keluaran digitalnya menjadi \textit{HIGH} (3.3V). Saat pertama kali dialiri daya, elemen piroelektrik pada sensor PIR 
  memerlukan waktu stabilisasi atau kalibrasi termal (\textit{warm-up time}) sekitar 30 hingga 60 detik terhadap suhu latar ruangan
-  agar dapat mendeteksi gerakan secara akurat tanpa memicu pembacaan palsu (\textit{false trigger}).
+  agar dapat mendeteksi gerakan secara akurat tanpa memicu pembacaan palsu (\textit{false trigger}) \cite{adafruitpir}.
 
 \subsection{Konsep Embedded System}
 Sistem tertanam (\textit{embedded system}) adalah sistem komputasi khusus yang menggabungkan perangkat keras (\textit{hardware})
@@ -529,6 +529,15 @@ Berdasarkan perancangan, implementasi, dan pengujian yang telah dilakukan, dapat
     \item Sistem masih memiliki keterbatasan, yaitu belum adanya histeresis ambang batas dan pencatatan data, sehingga pengembangan lanjutan sebagaimana dibahas pada Subbab 6.3 diperlukan untuk penggunaan di lingkungan nyata.
 \end{enumerate}
 
+\section*{Daftar Pustaka}
+\addcontentsline{toc}{section}{Daftar Pustaka}
+\begin{thebibliography}{9}
+\bibitem{rpidoc} Raspberry Pi Ltd., \textit{Raspberry Pi Documentation}. [Daring]. Tersedia: \url{https://www.raspberrypi.com/documentation/}
+\bibitem{gpiozero} B. Nuttall dan D. Jones, \textit{gpiozero Documentation}. [Daring]. Tersedia: \url{https://gpiozero.readthedocs.io/}
+\bibitem{dht11} Aosong Electronics, \textit{DHT11 Humidity \& Temperature Sensor (Datasheet)}.
+\bibitem{adafruitdht} Adafruit Industries, \textit{CircuitPython DHT Library Documentation}. [Daring]. Tersedia: \url{https://docs.circuitpython.org/projects/dht/en/latest/}
+\bibitem{adafruitpir} L. Ada, \textit{PIR Motion Sensor}, Adafruit Learning System. [Daring]. Tersedia: \url{https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor}
+\end{thebibliography}
 
 \newpage
 % 9. LAMPIRAN
