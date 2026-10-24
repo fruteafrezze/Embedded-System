@@ -14,6 +14,8 @@
 \usepackage{listings}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
 \graphicspath{ {images/} } % Opsional: Menentukan folder tempat Anda menyimpan semua foto
 
 
@@ -52,7 +54,7 @@
 % 1. HALAMAN JUDUL
 \begin{titlepage}
     \centering
-    \vspace*{3cm}
+    %\vspace*{3cm}
     {\large \textbf{LAPORAN UJIAN TENGAH SEMESTER}\\}   
     \vspace{0.5cm} 
     {\large \textbf{Sistem Tertanam}\\}
@@ -61,7 +63,7 @@
     \vspace{1cm}
     {\large \textbf{Dosen Pengampu:}\\}
     {\large \textbf{Drs. Hari Suparwito, S.J., M.App.IT}}\\
-    \vspace{1cm}
+    \vspace{2.5cm}
 
     \includegraphics[width=7cm]{usd.png}\\[0.5cm]
 
@@ -126,13 +128,13 @@ Tujuan dari pelaksanaan proyek ini adalah:
 Raspberry Pi adalah komputer papan tunggal (\textit{Single Board Computer} / SBC) seukuran kartu kredit yang dilengkapi dengan
  prosesor berbasis arsitektur ARM, memori RAM, port komunikasi, serta deretan pin GPIO. Raspberry Pi umumnya menjalankan sistem 
  operasi berbasis Linux (seperti Raspberry Pi OS) dan mendukung pemrograman tingkat tinggi menggunakan bahasa Python untuk 
- mengendalikan perangkat keras eksternal secara efisien.
+ mengendalikan perangkat keras eksternal secara efisien \cite{rpidoc,gpiozero}.
 
 \subsection{Sensor Suhu dan Kelembaban (DHT11)}
 Sensor DHT11 merupakan modul sensor digital yang berfungsi mengukur suhu dan kelembaban relatif udara di sekitarnya. Sensor ini 
 menggunakan elemen sensor kapasitif untuk mengukur kelembaban dan termistor (\textit{Negative Temperature Coefficient}) untuk 
 mengukur suhu, kemudian mengirimkan sinyal digital terkalibrasi melalui antarmuka komunikasi satu jalur (\textit{single-wire 
-serial interface}) ke pin GPIO Raspberry Pi.
+serial interface}) ke pin GPIO Raspberry Pi \cite{dht11,adafruitdht}.
 
 \subsection{Sensor Gerak PIR (\textit{Passive Infrared})}
 Sensor PIR (\textit{Passive Infrared}) adalah sensor elektronik yang berfungsi mendeteksi pergerakan objek berdasarkan pancaran 
@@ -141,7 +143,7 @@ bahwa sensor ini tidak memancarkan sinyal inframerah sendiri, melainkan hanya me
 elemen sensor piroelektrik di dalamnya. Ketika terjadi perubahan pola radiasi inframerah akibat gerakan, sensor PIR akan mengubah
  logika pin keluaran digitalnya menjadi \textit{HIGH} (3.3V). Saat pertama kali dialiri daya, elemen piroelektrik pada sensor PIR 
  memerlukan waktu stabilisasi atau kalibrasi termal (\textit{warm-up time}) sekitar 30 hingga 60 detik terhadap suhu latar ruangan
-  agar dapat mendeteksi gerakan secara akurat tanpa memicu pembacaan palsu (\textit{false trigger}).
+  agar dapat mendeteksi gerakan secara akurat tanpa memicu pembacaan palsu (\textit{false trigger}) \cite{adafruitpir}.
 
 \subsection{Konsep Embedded System}
 Sistem tertanam (\textit{embedded system}) adalah sistem komputasi khusus yang menggabungkan perangkat keras (\textit{hardware})
@@ -181,20 +183,57 @@ $\downarrow$\\
 
 \subsection{Desain Software dan Hardware}
 \subsubsection{Skema Rangkaian}
-Berikut adalah representasi skema perancangan rangkaian perangkat keras yang menghubungkan sensor, \textit{push button}, dan 
-indikator ke Raspberry Pi:
+Berikut adalah diagram skema interkoneksi perangkat keras antara modul sensor, \textit{push button}, serta aktuator terhadap pin GPIO Raspberry Pi:
 
-\vspace{0.2cm}
-\noindent\framebox[\textwidth]{%
-\parbox{0.95\textwidth}{%
+\begin{figure}[h!]
 \centering
-\vspace{0.8cm}
-\textit{[Tempatkan penjelasan detail rangkaian atau pengganti gambar skema rangkaian di sini]}\\[0.2cm]
-\small (Catatan: Sensor DHT dihubungkan ke VCC 3.3V, GND, dan Pin Data GPIO; Push Button dihubungkan ke Pin GPIO dengan
- konfigurasi Pull-Up/Pull-Down; LED dihubungkan seri dengan resistor 220 $\Omega$ menuju Pin GPIO dan GND).
-\vspace{0.8cm}
-}}
 \vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.8cm and 2.5cm,
+    mcu/.style={rectangle, draw=black, thick, fill=gray!10, minimum width=4.2cm, minimum height=6.5cm, align=center, font=\bfseries},
+    comp_in/.style={rectangle, rounded corners=3pt, draw=blue!70!black, thick, fill=blue!5, minimum width=3.8cm, minimum height=1.2cm, align=center, font=\small},
+    comp_out/.style={rectangle, rounded corners=3pt, draw=red!70!black, thick, fill=red!5, minimum width=4.2cm, minimum height=1.1cm, align=center, font=\small},
+    wire_in/.style={-{Stealth[length=2.5mm]}, thick, blue!70!black},
+    wire_out/.style={-{Stealth[length=2.5mm]}, thick, red!70!black},
+    pin_lbl/.style={font=\footnotesize\ttfamily, fill=white, inner sep=1.5pt}
+]
+
+% Central Raspberry Pi Block
+\node[mcu] (rpi) {RASPBERRY PI\\[0.2cm]\normalfont\footnotesize (BCM GPIO Mode)\\[0.4cm]\footnotesize \texttt{3.3V / 5V Power}\\\footnotesize \texttt{Common GND}};
+
+% Input Components (Left)
+\node[comp_in, above left=-1.2cm and 2.8cm of rpi] (dht) {\textbf{Sensor DHT11}\\(Suhu \& Kelembaban)\\\scriptsize VCC: 3.3V | GND};
+\node[comp_in, left=2.8cm of rpi] (pir) {\textbf{Sensor Gerak PIR}\\(Deteksi Aktivitas)\\\scriptsize VCC: 5V | GND};
+\node[comp_in, below left=-1.2cm and 2.8cm of rpi] (btn) {\textbf{Push Button (Mute)}\\(Internal Pull-Up)\\\scriptsize Pin 1: GPIO | Pin 2: GND};
+
+% Output Components (Right)
+\node[comp_out, above right=-1.0cm and 2.8cm of rpi] (led_r) {\textbf{LED Merah (Critical)}\\{\scriptsize + Resistor 220$\Omega$ $\rightarrow$ GND}};
+\node[comp_out, above right=-2.6cm and 2.8cm of rpi] (led_y) {\textbf{LED Kuning (Warning)}\\{\scriptsize + Resistor 220$\Omega$ $\rightarrow$ GND}};
+\node[comp_out, below right=-2.6cm and 2.8cm of rpi] (led_g) {\textbf{LED Hijau (Normal)}\\{\scriptsize + Resistor 220$\Omega$ $\rightarrow$ GND}};
+\node[comp_out, below right=-1.0cm and 2.8cm of rpi] (buz) {\textbf{Active Buzzer (Alarm)}\\{\scriptsize Pin (+) GPIO | Pin (--) GND}};
+
+% Connections Input -> RPi
+\draw[wire_in] (dht.east) -- node[pin_lbl, above] {GPIO 4 (D4)} ([yshift=2.0cm]rpi.west);
+\draw[wire_in] (pir.east) -- node[pin_lbl, above] {GPIO 23} (rpi.west);
+\draw[wire_in] (btn.east) -- node[pin_lbl, above] {GPIO 5} ([yshift=-2.0cm]rpi.west);
+
+% Connections RPi -> Output
+\draw[wire_out] ([yshift=2.2cm]rpi.east) -- node[pin_lbl, above] {GPIO 17} (led_r.west);
+\draw[wire_out] ([yshift=0.7cm]rpi.east) -- node[pin_lbl, above] {GPIO 27} (led_y.west);
+\draw[wire_out] ([yshift=-0.7cm]rpi.east) -- node[pin_lbl, above] {GPIO 22} (led_g.west);
+\draw[wire_out] ([yshift=-2.2cm]rpi.east) -- node[pin_lbl, above] {GPIO 25} (buz.west);
+
+\end{tikzpicture}%
+}
+\caption{Skema Interkoneksi Rangkaian dan Pin GPIO pada Raspberry Pi}
+\label{fig:skema_rangkaian}
+\end{figure}
+\vspace{0.2cm}
+
+Beberapa catatan terkait perangkat keras: (1) modul PIR dicatu 5V, sedangkan pin keluarannya menghasilkan logika \textit{HIGH} sekitar 3.3V sehingga dapat dihubungkan langsung ke GPIO 23 yang hanya toleran terhadap tegangan 3.3V; (2) modul DHT11 yang digunakan berjenis 3 pin sehingga resistor \textit{pull-up} pada jalur data sudah tersedia pada papan modul; (3) setiap LED diberi resistor 220$\Omega$ sebagai pembatas arus; dan (4) tombol \textit{mute} memanfaatkan \textit{internal pull-up} Raspberry Pi sehingga bernilai \textit{LOW} saat ditekan.
+% VERIFIKASI: pastikan poin (1) dan (2) sesuai dengan modul PIR dan DHT11 yang benar-benar dipakai.
+
 
 \subsubsection{Penjelasan Pin GPIO}
 Pemetaan alokasi pin GPIO pada Raspberry Pi (menggunakan penomoran BCM) yang digunakan dalam sistem monitoring ruang 
@@ -204,6 +243,7 @@ lab/server ini disajikan pada Tabel \ref{tab:pin_gpio}.
 \centering
 \caption{Pemetaan Pin GPIO Raspberry Pi}
 \vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Komponen} & \textbf{Pin BCM (GPIO)} & \textbf{Library / Objek} & \textbf{Fungsi / Mode} \\ \midrule
@@ -214,13 +254,14 @@ LED Merah & GPIO 17 & \texttt{TrafficLights (red)} & Output Indikator Kritis \\
 LED Kuning & GPIO 27 & \texttt{TrafficLights (yellow)} & Output Indikator Waspada \\
 LED Hijau & GPIO 22 & \texttt{TrafficLights (green)} & Output Indikator Normal/Init \\
 Active Buzzer & GPIO 25 & \texttt{Buzzer} & Output Alarm Audio \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \label{tab:pin_gpio}
 \end{table}
 
 \subsubsection{State Machine}
 Sistem dirancang menggunakan pendekatan \textit{Finite State Machine} (FSM) dengan lima kondisi (\textit{state}) 
-utama yang diatur berdasarkan skala prioritas kedaruratan seperti pada Tabel \ref{tab:state_machine}.
+utama yang diatur berdasarkan skala prioritas kedaruratan seperti pada Tabel \ref{tab:state_machine}. Kondisi \texttt{CRITICAL} memiliki prioritas tertinggi dan dievaluasi lebih dahulu, termasuk selama masa \textit{warm-up} PIR. \texttt{MUTED} bukan kondisi sensor, melainkan \textit{override} audio terhadap \texttt{WARNING} atau \texttt{CRITICAL}.
 
 \begin{table}[h!]
 \centering
@@ -234,54 +275,80 @@ utama yang diatur berdasarkan skala prioritas kedaruratan seperti pada Tabel \re
 \texttt{NORMAL} & Suhu $<$ 31$^\circ$C, RH $<$ 75\%, Tidak ada gerakan & Normal & LED Hijau ON, Buzzer OFF \\
 \texttt{WARNING} & RH $\ge$ 75\% ($<$ 80\%) ATAU terdeteksi gerakan PIR & Prioritas 2 & LED Kuning ON, Buzzer Beep Lambat (0.2s ON / 0.8s OFF) \\
 \texttt{CRITICAL} & Suhu $\ge$ 31$^\circ$C ATAU RH $\ge$ 80\% & Prioritas 1 & LED Merah Kedip Cepat (0.2s), Buzzer Beep Cepat (0.1s) \\
-\texttt{MUTED} & Tombol ditekan saat \texttt{WARNING} / \texttt{CRITICAL} & Override Audio & LED Kuning \& Merah ON, Buzzer OFF \\ \bottomrule
+\texttt{MUTED} & Tombol ditekan saat \texttt{WARNING} / \texttt{CRITICAL} (ditekan lagi $\rightarrow$ alarm aktif kembali; otomatis \textit{reset} saat \texttt{NORMAL}) & Override Audio & LED Kuning \& Merah ON, Buzzer OFF \\ \bottomrule
 \end{tabular}%
 }
 \label{tab:state_machine}
 \end{table}
 
 \subsubsection{Flowchart Sistem}
-Alur kerja perangkat lunak pada sistem monitoring ruangan ini terdiri dari tahapan berurutan berikut:
-\begin{enumerate}
-    \item \textbf{Mulai (Start):} Sistem dinyalakan dan program dijalankan.
-    \item \textbf{Inisialisasi:} Mengatur mode penomoran pin GPIO (BCM), mengatur arah pin (input/output), dan menginisialisasi 
-    objek sensor DHT.
-    \item \textbf{Baca Input:} Membaca status \textit{push button} serta mengakuisisi nilai suhu ($^\circ$C) dan kelembaban 
-    (\%) dari sensor DHT.
-    \item \textbf{Evaluasi Kondisi:}
-    \begin{itemize}
-        \item Jika tombol ditekan $\rightarrow$ Reset alarm / tampilkan status manual di layar.
-        \item Jika Suhu $>$ [Batas Suhu, misal 30$^\circ$C] ATAU Kelembaban $>$ [Batas Kelembaban, misal 75\%] $\rightarrow$
-         Masuk ke kondisi \textbf{Peringatan (Warning)}: Nyalakan LED Merah/Buzzer, matikan LED Hijau.
-        \item Jika Suhu dan Kelembaban berada di bawah batas $\rightarrow$ Masuk ke kondisi \textbf{Normal}: Nyalakan LED Hijau, 
-        matikan LED Merah/Buzzer.
-    \end{itemize}
-    \item \textbf{Tampilkan Data:} Mencetak nilai suhu, kelembaban, dan status ruangan ke terminal.
-    \item \textbf{Delay \& Loop:} Tunggu selama 2 detik, lalu kembali ke langkah \textbf{Baca Input} hingga program dihentikan 
-    pengguna.
-\end{enumerate}
+Alur kerja perangkat lunak pada program utama (\texttt{main()}) ditunjukkan pada Gambar \ref{fig:flowchart}. Pada setiap iterasi, sistem memeriksa kalibrasi PIR, membaca sensor, lalu menentukan \textit{state} berdasarkan prioritas: kondisi kritis diperiksa lebih dahulu (termasuk saat \textit{warm-up}), kemudian masa \textit{warm-up} PIR, kemudian kondisi peringatan, dan terakhir kondisi normal.
 
-\subsubsection{State Machine}
-Sistem dirancang menggunakan pendekatan \textit{Finite State Machine} (FSM) dengan empat kondisi (\textit{state}) utama 
-seperti pada Tabel \ref{tab:state_machine}.
-
-\begin{table}[h!]
+\begin{figure}[p]
 \centering
-\caption{Transisi State Machine Sistem Monitoring Ruangan}
-\vspace{0.2cm}
-\begin{tabular}{@{}llll@{}}
-\toprule
-\textbf{State Saat Ini} & \textbf{Kondisi Pemicu (Trigger)} & \textbf{State Berikutnya} & \textbf{Aksi Output} \\ \midrule
-\texttt{IDLE / INIT} & Inisialisasi selesai & \texttt{NORMAL} & Semua LED mati \\
-\texttt{NORMAL} & Suhu $\le$ 30$^\circ$C \& RH $\le$ 75\% & \texttt{NORMAL} & LED Hijau ON, Alarm OFF \\
-\texttt{NORMAL} & Suhu $>$ 30$^\circ$C atau RH $>$ 75\% & \texttt{WARNING} & LED Hijau OFF, Alarm ON \\
-\texttt{WARNING} & Push Button ditekan & \texttt{MUTE / ACK} & LED Merah berkedip, Buzzer OFF \\
-\texttt{WARNING / MUTE} & Suhu $\le$ 30$^\circ$C \& RH $\le$ 75\% & \texttt{NORMAL} & LED Hijau ON, Alarm OFF \\ \bottomrule
-\end{tabular}
-\label{tab:state_machine}
-\end{table}
+\resizebox{!}{0.86\textheight}{%
+\begin{tikzpicture}[
+    font=\small,
+    >={Stealth[length=2.2mm]},
+    term/.style={rectangle, rounded corners=8pt, draw=black, thick, fill=gray!15, minimum width=4.2cm, minimum height=0.8cm, align=center},
+    proc/.style={rectangle, draw=black, thick, fill=blue!5, minimum width=5.6cm, minimum height=0.9cm, align=center, text width=5.4cm},
+    dec/.style={diamond, aspect=3.2, draw=black, thick, fill=yellow!12, inner sep=0pt, minimum width=6.4cm, align=center, text width=3.6cm, font=\footnotesize},
+    st/.style={rectangle, draw=black, thick, minimum width=3.8cm, minimum height=0.9cm, align=center, text width=3.6cm, font=\footnotesize},
+    lbl/.style={font=\footnotesize\bfseries, fill=white, inner sep=1pt}
+]
+% jalur utama
+\node[term] (start) at (0,0) {Mulai};
+\node[proc] (init) at (0,-1.5) {Inisialisasi GPIO, sensor DHT11, PIR, \textit{button}; nyalakan LED Hijau};
+\node[proc] (baca) at (0,-3.2) {Periksa \textit{warm-up} PIR; baca suhu \& kelembaban DHT11 (simpan nilai valid terakhir)};
+\node[dec]  (d1)   at (0,-5.4) {Suhu $\ge$ 31$^\circ$C atau RH $\ge$ 80\%?};
+\node[dec]  (d2)   at (0,-7.7) {\textit{Warm-up} PIR belum selesai?};
+\node[dec]  (d3)   at (0,-10.0) {RH $\ge$ 75\% atau PIR mendeteksi gerakan?};
+\node[st, fill=green!15, text width=5.2cm, minimum width=5.4cm] (nor) at (0,-12.2) {\texttt{NORMAL}; reset \texttt{is\_muted}};
+\node (junc) at (0,-13.3) {};
+\node[dec]  (d4)   at (0,-14.5) {\texttt{is\_muted} dan state \texttt{WARNING}/\texttt{CRITICAL}?};
+\node[proc] (out)  at (0,-16.8) {Jika \textit{state} berubah: \texttt{jalankan\_output(state)}; cetak status ke terminal};
+\node[proc] (slp)  at (0,-18.2) {\texttt{time.sleep(2.0)}};
 
-% 5. IMPLEMENTASI
+% state di kanan
+\node[st, fill=red!20]    (crit) at (6.2,-5.4)  {\texttt{CRITICAL}};
+\node[st, fill=green!15]  (inis) at (6.2,-7.7)  {\texttt{INITIALIZING}};
+\node[st, fill=yellow!35] (warn) at (6.2,-10.0) {\texttt{WARNING}};
+\node[st, fill=orange!25] (mut)  at (6.2,-14.5) {\texttt{MUTED}};
+
+% panah utama
+\draw[->] (start) -- (init);
+\draw[->] (init) -- (baca);
+\draw[->] (baca) -- (d1);
+\draw[->] (d1) -- node[lbl, right] {Tidak} (d2);
+\draw[->] (d2) -- node[lbl, right] {Tidak} (d3);
+\draw[->] (d3) -- node[lbl, right] {Tidak} (nor);
+\draw (nor) -- (junc.center);
+\draw[->] (junc.center) -- (d4);
+\draw[->] (d4) -- node[lbl, right] {Tidak} (out);
+\draw[->] (out) -- (slp);
+
+% cabang ya
+\draw[->] (d1) -- node[lbl, above] {Ya} (crit);
+\draw[->] (d2) -- node[lbl, above] {Ya} (inis);
+\draw[->] (d3) -- node[lbl, above] {Ya} (warn);
+\draw[->] (d4) -- node[lbl, above] {Ya} (mut);
+
+% penggabungan state ke pemeriksaan mute
+\draw (crit.east) -- ++(1.0,0) coordinate (rc) |- (junc.center);
+\draw (inis.east) -- ++(1.0,0) -| (rc);
+\draw (warn.east) -- ++(1.0,0) -| (rc);
+\draw[->] (mut.south) |- (out.east);
+
+% loop kembali
+\draw[->] (slp.west) -- ++(-1.5,0) |- (baca.west);
+\end{tikzpicture}%
+}
+\caption{\textit{Flowchart} Program Utama Sistem Monitoring Ruangan}
+\label{fig:flowchart}
+\end{figure}
+
+Tombol \textit{mute} tidak termasuk dalam alur \textit{polling} di atas karena ditangani secara asinkron oleh fungsi \textit{callback} \texttt{tekan\_tombol\_handler()}, yang hanya mengubah variabel \texttt{is\_muted} saat sistem berada pada \textit{state} \texttt{WARNING}, \texttt{CRITICAL}, atau \texttt{MUTED}. Penekanan tombol saat \texttt{MUTED} akan mengaktifkan kembali alarm, dan \texttt{is\_muted} otomatis di-\textit{reset} saat sistem kembali ke \texttt{NORMAL}.
+
 % 5. IMPLEMENTASI
 \section{Implementasi}
 \subsection{Tools \& Library}
@@ -352,7 +419,7 @@ def evaluasi_state(suhu, kelembaban, gerakan):
 \subsection{Skenario Uji}
 Pengujian dilakukan melalui enam skenario yang mencakup masa kalibrasi awal, kondisi lingkungan normal, tingkat peringatan 
 bertingkat (waspada hingga kritis), deteksi gerakan, serta fungsi peredaman suara (\textit{mute}). Rekapitulasi skenario dan 
-hasil uji ditunjukkan pada Tabel \ref{tab:hasil_uji}.
+hasil uji ditunjukkan pada Tabel \ref{tab:hasil_uji}. Dokumentasi foto rangkaian dan keluaran terminal dapat dilihat pada Lampiran B.
 
 \begin{table}[h!]
 \centering
@@ -382,7 +449,7 @@ Berdasarkan implementasi kode program dan skenario pengujian yang telah dijalank
     (\textit{false positive}). Kode program berhasil menangani hal ini melalui fungsi \texttt{periksa\_warmup\_pir()} yang menahan
      status sistem pada \texttt{INITIALIZING} (LED Hijau menyala) dan mengabaikan pembacaan PIR. Namun, program dilengkapi logika
       keselamatan cerdas: apabila selama masa \textit{warm-up} terjadi kondisi darurat (suhu $\ge$ 31.0$^\circ$C atau kelembaban 
-      $\ge$ 80.0\%), sistem langsung memotong proses \textit{warm-up} dan masuk ke state \texttt{CRITICAL}.
+      $\ge$ 80.0\%), sistem langsung berpindah ke state \texttt{CRITICAL} tanpa menunggu \textit{warm-up} selesai, sementara penghitungan waktu kalibrasi PIR tetap berjalan di latar belakang.
     
     \item \textbf{Mekanisme Interupsi Tombol Mute dan Auto-Reset:}
     Penggunaan \textit{event-driven callback} (\texttt{tombol\_mute.when\_pressed}) dengan parameter \texttt{bounce\_time=0.1} 
@@ -398,7 +465,7 @@ Berdasarkan implementasi kode program dan skenario pengujian yang telah dijalank
         jalur yang sangat sensitif terhadap waktu (\textit{timing}), sehingga kerap memunculkan eksepsi \texttt{RuntimeError} 
         (seperti kegagalan \textit{checksum} atau \textit{buffer} belum siap). Kendala ini berhasil diatasi dengan membungkus 
         pembacaan sensor di dalam blok \texttt{try-except RuntimeError} serta menyimpan nilai pembacaan terakhir yang valid ke 
-        dalam variabel \texttt{suhu\_valid} dan \texttt{lembab\_valid} (dengan nilai awal *default* 27.0$^\circ$C dan 60.0\%).
+        dalam variabel \texttt{suhu\_valid} dan \texttt{lembab\_valid} (dengan nilai awal \textit{default} 27.0$^\circ$C dan 60.0\%).
         \item \textbf{Transisi Output Tanpa Kedipan Berulang (\textit{State Change Detection}):} Jika fungsi pengendali LED dan 
         buzzer dipanggil ulang pada setiap iterasi \textit{loop} (setiap 2 detik), pola kedipan (\texttt{blink}/\texttt{beep}) 
         akan terus ter-reset dari awal. Penambahan variabel pelacak \texttt{status\_output\_terakhir} memastikan fungsi 
@@ -410,8 +477,7 @@ Berdasarkan implementasi kode program dan skenario pengujian yang telah dijalank
 \section{Pembahasan}
 \subsection{Evaluasi Performa Sistem}
 Secara arsitektural, sistem bekerja dengan sangat efisien dan responsif. Pemanfaatan fitur \texttt{background=True} pada 
-metode \texttt{blink()} dan \texttt{beep()} di pustaka \texttt{gpiozero} memungkinkan pembangkitan sinyal PWM/kedipan LED 
-(siklus 0.2 detik) dan ketukan buzzer (siklus 0.1 detik pada kondisi kritis) berjalan pada \textit{thread} terpisah. Hal ini 
+metode \texttt{blink()} dan \texttt{beep()} di pustaka \texttt{gpiozero} memungkinkan pembangkitan pola kedipan LED (0.2 detik ON / 0.2 detik OFF) dan ketukan \textit{buzzer} (0.1 detik ON / 0.1 detik OFF pada kondisi kritis) berjalan pada \textit{thread} terpisah. Hal ini 
 membuat \textit{main loop} tetap dapat berfokus pada pembacaan sensor setiap 2.0 detik tanpa memblokir frekuensi kedipan indikator.
  Selain itu, penggunaan \texttt{time.monotonic()} menjamin akurasi perhitungan waktu \textit{warm-up} karena nilainya tidak 
  terpengaruh apabila sistem operasi melakukan sinkronisasi waktu jaringan (NTP). Pada saat program dihentikan 
@@ -457,10 +523,12 @@ Untuk meningkatkan keandalan sistem di lingkungan ruang server atau laboratorium
 \section{Kesimpulan}
 Berdasarkan perancangan, implementasi, dan pengujian yang telah dilakukan, dapat disimpulkan bahwa:
 \begin{enumerate}
-    \item Sistem monitoring ruangan sederhana berbasis Raspberry Pi berhasil dirancang dan diimplementasikan dengan mengintegrasikan sensor suhu dan kelembaban (DHT), \textit{push button}, serta indikator output LED/Buzzer melalui pin GPIO.
-    \item Perangkat lunak yang dibangun menggunakan bahasa Python mampu mengakuisisi data sensor secara berkala dan mengeksekusi transisi \textit{state machine} secara akurat sesuai ambang batas yang ditentukan.
-    \item Berdasarkan empat skenario pengujian (kondisi normal, suhu tinggi, kelembaban tinggi, dan penekanan tombol), sistem mampu merespons perubahan kondisi lingkungan dan interaksi pengguna sesuai dengan tujuan proyek.
+    \item Sistem monitoring ruangan sederhana berbasis Raspberry Pi berhasil dirancang dan diimplementasikan dengan mengintegrasikan sensor suhu dan kelembaban (DHT11), sensor gerak (PIR), \textit{push button}, serta indikator output LED dan \textit{buzzer} melalui pin GPIO.
+    \item Perangkat lunak yang dibangun menggunakan bahasa Python mampu mengakuisisi data sensor secara berkala dan mengeksekusi transisi \textit{state machine} lima kondisi (\texttt{INITIALIZING}, \texttt{NORMAL}, \texttt{WARNING}, \texttt{CRITICAL}, dan \texttt{MUTED}) sesuai ambang batas yang ditentukan.
+    \item Berdasarkan enam skenario pengujian (\textit{warm-up} PIR, kondisi normal, peringatan akibat kelembaban atau gerakan, kondisi kritis, penekanan tombol saat alarm, dan penekanan tombol saat kondisi aman), sistem mampu merespons perubahan kondisi lingkungan, deteksi gerakan, dan interaksi pengguna sesuai dengan tujuan proyek.
+    \item Sistem masih memiliki keterbatasan, yaitu belum adanya histeresis ambang batas dan pencatatan data, sehingga pengembangan lanjutan sebagaimana dibahas pada Subbab 6.3 diperlukan untuk penggunaan di lingkungan nyata.
 \end{enumerate}
+
 
 \newpage
 % 9. LAMPIRAN
@@ -480,11 +548,6 @@ from gpiozero import (
     Button,
     MotionSensor,
 )
-
-
-# ============================================================
-# 1. INISIALISASI HARDWARE
-# ============================================================
 
 
 lampu = TrafficLights(
@@ -513,11 +576,6 @@ dht_device = adafruit_dht.DHT11(
 )
 
 
-# ============================================================
-# 2. KONFIGURASI SISTEM
-# ============================================================
-
-
 WAKTU_WARMUP_PIR = 60  # detik
 
 
@@ -529,11 +587,6 @@ BATAS_LEMBAB_KRITIS = 80.0
 current_state = "INITIALIZING"
 is_muted = False
 pir_siap = False
-
-
-# ============================================================
-# 3. TOMBOL MUTE
-# ============================================================
 
 
 def tekan_tombol_handler():
@@ -567,11 +620,6 @@ def tekan_tombol_handler():
 tombol_mute.when_pressed = tekan_tombol_handler
 
 
-# ============================================================
-# 4. WARM-UP PIR
-# ============================================================
-
-
 def periksa_warmup_pir(waktu_mulai):
     global pir_siap
 
@@ -600,13 +648,6 @@ def periksa_warmup_pir(waktu_mulai):
         )
 
 
-
-
-# ============================================================
-# 5. PEMBACAAN SENSOR
-# ============================================================
-
-
 def baca_semua_sensor():
     suhu = None
     kelembaban = None
@@ -628,13 +669,6 @@ def baca_semua_sensor():
 
 
     return suhu, kelembaban, ada_gerakan
-
-
-
-
-# ============================================================
-# 6. EVALUASI STATUS
-# ============================================================
 
 
 def evaluasi_state(suhu, kelembaban, gerakan):
@@ -670,13 +704,6 @@ def evaluasi_state(suhu, kelembaban, gerakan):
 
 
     return current_state
-
-
-
-
-# ============================================================
-# 7. KONTROL LAMPU DAN BUZZER
-# ============================================================
 
 
 def jalankan_output(state):
@@ -723,13 +750,6 @@ def jalankan_output(state):
         lampu.yellow.on()
         lampu.red.on()
         buzzer.off()
-
-
-
-
-# ============================================================
-# 8. PROGRAM UTAMA
-# ============================================================
 
 
 def main():
@@ -854,20 +874,35 @@ Berikut adalah dokumentasi rangkaian perangkat keras dan pengujian sistem:
 \noindent\framebox[\textwidth]{%
 \parbox{0.95\textwidth}{%
 \centering
-\vspace{1.2cm}
-\textbf{[Tempat Foto 1: Rangkaian Keseluruhan Sistem Monitoring Ruangan]}\\
-\small (Deskripsi: Rangkaian Raspberry Pi, Sensor DHT, Push Button, dan LED pada Breadboard)
-\vspace{1.2cm}
+\vspace{0.5cm}
+\includegraphics[width=10cm]{rangkaian.jpeg}\\[0.5cm]
+\textbf{[Foto 1: Rangkaian Keseluruhan Sistem Monitoring Ruangan]}\\
+\small (Deskripsi: Rangkaian Raspberry Pi, Buzzer, Sensor DHT, Push Button, dan LED pada Breadboard)
+\vspace{0.5cm}
 }}
 
-\vspace{0.4cm}
+\vspace{0.3cm}
 \noindent\framebox[\textwidth]{%
 \parbox{0.95\textwidth}{%
 \centering
-\vspace{1.2cm}
-\textbf{[Tempat Foto 2: Pengujian Saat Kondisi Normal dan Kondisi Peringatan]}\\
-\small (Deskripsi: Tampilan output terminal beserta indikator LED menyala)
-\vspace{1.2cm}
+\vspace{0.4cm}
+\includegraphics[width=0.47\textwidth]{output rangkaian(green).jpg}\hfill
+\includegraphics[width=0.47\textwidth]{output init.jpg}\\[0.4cm]
+\textbf{[Foto 2: Pengujian Saat Kondisi Normal dan Warm-Up]}\\
+\small (Deskripsi: Tampilan output terminal (kanan) saat state \texttt{INITIALIZING} dengan hitung mundur \textit{warm-up} PIR, beserta indikator LED hijau menyala pada rangkaian (kiri))
+\vspace{0.4cm}
+}}
+
+\vspace{0.3cm}
+\noindent\framebox[\textwidth]{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.4cm}
+\includegraphics[width=0.47\textwidth]{output rangkaian(red).jpg}\hfill
+\includegraphics[width=0.47\textwidth]{output muted.jpg}\\[0.4cm]
+\textbf{[Foto 3: Pengujian Saat Kondisi Warning, Critical, dan Muted]}\\
+\small (Deskripsi: Tampilan output terminal (kanan) saat state \texttt{CRITICAL}, \texttt{WARNING}, dan \texttt{MUTED}, beserta indikator LED merah/kuning pada rangkaian (kiri))
+\vspace{0.4cm}
 }}
 
 \subsection*{C. Link Video Demo Pembuatan dan Pengujian}
